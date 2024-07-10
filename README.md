@@ -27,4 +27,4 @@ The StudyCenter Management System is a web application designed to manage educat
 4. Access the application via a web browser.
 
 ## Contact
-For any inquiries, please contact [your email here].
+For any inquiries, please contact  Telegram: [@ravshanxonov](https://t.me/ravshanxonov)..
