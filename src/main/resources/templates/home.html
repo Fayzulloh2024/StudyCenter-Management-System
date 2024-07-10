@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="/bootstrap.min.css">
+    <style>
+        .box {
+            background-color: #4CAF50;
+            color: white;
+            width: 100px;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .top-boxes {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .icon {
+            background: none;
+            border: none;
+            font-size: 16px;
+        }
+        .group-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+        .group-container a {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .center-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+
+
+    </style>
+</head>
+<body>
+<div class="row">
+    <div class="btn">
+    <a href="/logout">
+        <button type="button" >Logout</button>
+    </a>
+    </div>
+
+
+
+<div class="center-container">
+        <div class="top-boxes group-container">
+            <a th:each="group : ${groups}" th:href="${'/?groupId=' + group.id}">
+                <div class="box" th:text="${group.name}" th:data-group-id="${group.id}" onclick="selectGroup(this)"></div>
+            </a>
+            <a th:if="${user}" href="/group">
+                <button type="button" class="box ">add</button>
+            </a>
+        </div>
+    </div>
+
+
+
+    <div >
+        <div class="row">
+            <div  th:if="${currentGroup != null}">
+                <div th:if="${currentGroup != null && user!= null}" >
+                    <a th:href="${'/timeTable/add?groupId='+currentGroup.id}">
+                        <button class="btn btn-outline-info text-dark  ">+</button>
+                    </a>
+                </div>
+                <form action="/" method="get">
+                    <input type="hidden" name="groupId" th:value="${currentGroup.id}">
+                    <div class="form-select">
+                        <select  id="time-table" name="timeTableId" onchange="this.form.submit()">
+                            <option>select modul</option>
+                            <option th:each="timeTable : ${timeTables}"
+                                    th:value="${timeTable.id}"
+                                    th:text="${timeTable.name}"
+                                    th:selected="${currentTimeTable == timeTable}">
+                            </option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="container">
+            <div th:if="${currentTimeTable != null}" class="row">
+                <div class="col-9">
+                    <ul th:if="${currentTimeTable.status == T(org.example.study.entity.enums.TimeTableStatus).CREATED}"
+                        class="list-group">
+                        <li th:each="currentTimeTableStudent : ${currentTimeTableStudents}"
+                            th:text="${currentTimeTableStudent.getStudent().getFirstName()}"
+                            class="list-group-item">
+                        </li>
+                    </ul>
+                    <form th:if="${currentTimeTable.status == T(org.example.study.entity.enums.TimeTableStatus).CREATED && user !=null}"
+                          action="/student/add">
+                        <input type="hidden" name="timeTableId" th:value="${currentTimeTable.id}">
+                        <button type="submit" class="btn btn-primary">Add Student</button>
+                    </form>
+                    <table th:if="${currentTimeTable.status == T(org.example.study.entity.enums.TimeTableStatus).IN_PROGRESS}"
+                           class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th th:each="attendance : ${eachStudentAttendance.get(currentTimeTableStudents.get(0))}"
+                                th:text="${attendance.lesson.date}"
+                                th:class="${attendance.lesson.date == currentLesson.date?'bg-success text-white':''}"
+                            ></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="timeTableStudent : ${currentTimeTableStudents}">
+                            <td th:text="${timeTableStudent.student.fullName()}"></td>
+                            <td th:each="attendance : ${eachStudentAttendance.get(timeTableStudent)}">
+                                <form action="/studentAttendance" method="post">
+                                    <input type="hidden" name="studentAttendanceId" th:value="${attendance.id}">
+                                    <input type="hidden" name="currentLessonId" th:value="${currentLesson.id}">
+                                    <input type="hidden" name="timeTableId" th:value="${currentTimeTable.id}">
+                                    <button type="submit" class="icon"
+                                            th:text="${attendance.hasInLesson ? '🟢':'🔴'}"></button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+
+
+                </div>
+                <div class="col-3">
+                    <form th:if="${currentTimeTable.status == T(org.example.study.entity.enums.TimeTableStatus).CREATED && user!= null}"
+                          action="/timeTable/start" method="post">
+                        <input type="hidden" name="timeTableId" th:value="${currentTimeTable.id}">
+                        <button class="btn btn-primary">Start Time Table</button>
+                    </form>
+                    <div th:if="${currentTimeTable.status == T(org.example.study.entity.enums.TimeTableStatus).IN_PROGRESS}"
+                         class="d-flex justify-content-end">
+                        <div class="btn-group">
+                            <form action="/lesson/start" method="post"
+                                  th:if="${currentLesson.status == T(org.example.study.entity.enums.LessonStatus).CREATED}">
+                                <input type="hidden" name="lessonId" th:value="${currentLesson.id}">
+                                <input type="hidden" name="timeTableId" th:value="${currentTimeTable.id}">
+                                <button class="btn btn-primary">Start Lesson</button>
+                            </form>
+                            <form action="/lesson/complete" method="post"
+                                  th:if="${currentLesson.status == T(org.example.study.entity.enums.LessonStatus).IN_PROGRESS}">
+                                <input type="hidden" name="lessonId" th:value="${currentLesson.id}">
+                                <input type="hidden" name="timeTableId" th:value="${currentTimeTable.id}">
+                                <button class="btn btn-danger">End Lesson</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function selectGroup(element) {
+        document.getElementById('groupId').value = element.getAttribute('data-group-id');
+        document.getElementById('groupForm').submit();
+    }
+</script>
+</body>
+</html>
